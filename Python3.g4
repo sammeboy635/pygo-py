@@ -1,4 +1,4 @@
-grammar MathGrammar;
+grammar Python3;
 
 // Keywords
 IMPORT : 'import' ;
@@ -31,13 +31,6 @@ LAMBDA : 'lambda';
 T_INT : 'int';
 T_FLOAT : 'float';
 T_STRING : 'str';
-
-// Literals
-ID : [a-zA-Z_][a-zA-Z0-9_]*;
-BOOLEAN : 'True' | 'False';
-STRING : '"' (~["\\]* ('\\' .)*)* '"' | '\'' (~['\\]* ('\\' .)*)* '\'';
-INTEGER : [0-9]+;
-FLOAT : [0-9]* '.' [0-9]+;
 
 // Operators
 ADDITION : '+';
@@ -90,6 +83,14 @@ END : '\r'? '\n';
 TAB : '\t';
 COMMA : ',';
 
+// Literals
+BOOLEAN : 'True' | 'False';
+STRING : '"' (~["\\] | '\r' | '\n' | '\t' | '\\' .)* '"';
+INTEGER : [0-9]+;
+FLOAT : [0-9]* '.' [0-9]+;
+ID : [a-zA-Z_][a-zA-Z0-9_]*;
+
+
 // Unknown
 // UNKNOWN : . ;
 
@@ -97,22 +98,25 @@ WS : [ \t]+ -> skip; // skip spaces, tabs, newlines
 
 
 // Parser rules
-prog: stat+ ;
+
+program : stat* ;
+
+function_def : DEF ID OPEN_PAREN params_id? CLOSED_PAREN COLON suite ;
+
+params_id : ID (COMMA ID)* ;
+
 stat: function_def
+	| assignment
 	| expr END  // expression statement
-    | ASSIGNMENT expr END  // assignment statement
-	| function_call
+	| function_call END
     ;
 
-function_call: STRING OPEN_PAREN arg_list? CLOSED_PAREN ;  // function call
+assignment: ID ASSIGNMENT expr END | function_call;
+function_call: ID OPEN_PAREN arg_list? CLOSED_PAREN ;  // function call
 
 arg_list: expr (COMMA expr)* ;  // list of arguments
 
-function_def: 'def' STRING OPEN_PAREN arg_list_literal? CLOSED_PAREN COLON ;  // function call
-
-arg_list_literal: STRING (COMMA STRING)* ;  // list of arguments
-
-suite: '\n' TAB stat*;
+suite: END TAB? (stat END TAB?)*;
 
 expr: expr ADDITION term  // addition
     | expr SUBTRACTION term  // subtraction
@@ -127,10 +131,13 @@ term: term MULTIPLICATION factor  // multiplication
     ;
 
 factor: OPEN_PAREN expr CLOSED_PAREN  // parenthesized expression
+	  | var //load var
       | number  // number literal
       | STRING  // string literal
       ;
 
 number: INTEGER  // integer literal
-      | FLOAT  // floating point literal
+      	| FLOAT  // floating point literal
       ;
+
+var : ID ;// load var
